@@ -135,7 +135,7 @@ if option == "Write Email":
         if st.button("Send Email"):
             email_content = st.session_state.get("email_content", "")
             send_result = send_email(sender_email, sender_password, recipient_email, email_content)
-            st.write("Email was successfully sent!")
+            st.write(send_result)
             st.session_state["is_spam_checked"] = False
             
 
