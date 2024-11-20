@@ -3,11 +3,8 @@ pandas
 joblib
 smtplib
 email.mime.multipart
-MIMEMultipart
 email.mime.text
-MIMEText
 imaplib
-email
 email.header
 decode_header	
 numpy
