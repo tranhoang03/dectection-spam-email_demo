@@ -112,22 +112,27 @@ if "email_subject" not in st.session_state:
 option = st.selectbox("Choose an option:", ["Write Email", "Get Email from My Gmail"])
 
 if option == "Write Email":
-    email_content = st.text_area("Enter email content:", "")
+    # Lưu trạng thái của email_content
+    if "email_content" not in st.session_state:
+        st.session_state.email_content = ""
+
+    st.session_state.email_content = st.text_area("Enter email content:", st.session_state.email_content)
     language = st.selectbox("Choose language:", ["en", "vi"])
     if st.button("Check Spam"):
-        result = process_text(email_content, language)
+        result = process_text(st.session_state.email_content, language)
         if "Ham mail" in result:
             st.success(result)
-            with st.form("send_email_form"):
+            with st.form("send_email_form", clear_on_submit=True):
                 sender_email = st.text_input("Your email:")
                 sender_password = st.text_input("Your password:", type="password")
                 recipient_email = st.text_input("Recipient's email:")
                 submit_button = st.form_submit_button("Send Email")
                 if submit_button:
-                    send_result = send_email(sender_email, sender_password, recipient_email, email_content)
-                    st.success(send_result)
+                    send_result = send_email(sender_email, sender_password, recipient_email, st.session_state.email_content)
+                    st.write(send_result)
         else:
-             st.write(result)
+            st.write(result)
+
 
 else:
     email_account = st.text_input("Enter your Gmail account:")
