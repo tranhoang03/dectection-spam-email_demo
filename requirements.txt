@@ -7,6 +7,3 @@ joblib
 streamlit
 pandas
 joblib
-email
-imaplib
-standard_data
