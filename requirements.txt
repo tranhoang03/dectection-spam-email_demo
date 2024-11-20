@@ -7,5 +7,4 @@ joblib
 streamlit
 pandas
 joblib
-imaplib
 standard_data
