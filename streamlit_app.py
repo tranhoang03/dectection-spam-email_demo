@@ -112,27 +112,32 @@ if "email_subject" not in st.session_state:
 option = st.selectbox("Choose an option:", ["Write Email", "Get Email from My Gmail"])
 
 if option == "Write Email":
-    # Lưu trạng thái của email_content
-    if "email_content" not in st.session_state:
-        st.session_state.email_content = ""
-
-    st.session_state.email_content = st.text_area("Enter email content:", st.session_state.email_content)
+    email_content = st.text_area("Enter email content:", "")
     language = st.selectbox("Choose language:", ["en", "vi"])
     if st.button("Check Spam"):
-        result = process_text(st.session_state.email_content, language)
+        result = process_text(email_content, language)
         if "Ham mail" in result:
             st.success(result)
-            with st.form("send_email_form", clear_on_submit=True):
-                sender_email = st.text_input("Your email:")
-                sender_password = st.text_input("Your password:", type="password")
-                recipient_email = st.text_input("Recipient's email:")
-                submit_button = st.form_submit_button("Send Email")
-                if submit_button:
-                    send_result = send_email(sender_email, sender_password, recipient_email, st.session_state.email_content)
-                    st.write(send_result)
-        else:
-            st.write(result)
 
+            # Lưu trạng thái đã kiểm tra email vào session_state
+            st.session_state["is_spam_checked"] = True
+            st.session_state["email_content"] = email_content
+        else:
+            st.error(result)
+
+    # Hiển thị các trường gửi email chỉ khi email được xác nhận là "Ham mail"
+    if st.session_state.get("is_spam_checked", False):
+        sender_email = st.text_input("Your email:")
+        sender_password = st.text_input("Your password:", type="password")
+        recipient_email = st.text_input("Recipient's email:")
+
+        # Nút gửi email
+        if st.button("Send Email"):
+            email_content = st.session_state.get("email_content", "")
+            send_result = send_email(sender_email, sender_password, recipient_email, email_content)
+            st.write("Email was successfully sent!")
+            st.session_state["is_spam_checked"] = False
+            
 
 else:
     email_account = st.text_input("Enter your Gmail account:")
