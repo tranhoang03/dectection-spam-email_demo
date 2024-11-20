@@ -155,7 +155,7 @@ else:
         if st.button("Check Spam Email"):
             result = process_text(st.session_state.email_body, language)
             if("Ham mail" in result ):
-                st.success("Result:", result)
+                st.success(result)
             else:
-                st.error("Result:", result)
+                st.error(result)
 
