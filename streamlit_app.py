@@ -154,4 +154,8 @@ else:
         language = st.selectbox("Choose language for prediction:", ["en", "vi"])
         if st.button("Check Spam Email"):
             result = process_text(st.session_state.email_body, language)
-            st.write("Result:", result)
+            if("Ham" in result ):
+                st.success("Result:", result)
+            else:
+                st.error("Result:", result)
+
