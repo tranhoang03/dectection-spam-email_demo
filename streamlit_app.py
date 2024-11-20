@@ -126,6 +126,8 @@ if option == "Write Email":
                 if submit_button:
                     send_result = send_email(sender_email, sender_password, recipient_email, email_content)
                     st.success(send_result)
+        else:
+             st.write(result)
 
 else:
     email_account = st.text_input("Enter your Gmail account:")
