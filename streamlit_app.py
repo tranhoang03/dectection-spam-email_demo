@@ -118,12 +118,12 @@ if option == "Write Email":
         result = process_text(email_content, language)
         if "Ham mail" in result:
             st.success(result)
-
             # Lưu trạng thái đã kiểm tra email vào session_state
             st.session_state["is_spam_checked"] = True
             st.session_state["email_content"] = email_content
         else:
             st.error(result)
+            st.session_state["is_spam_checked"] = False 
 
     # Hiển thị các trường gửi email chỉ khi email được xác nhận là "Ham mail"
     if st.session_state.get("is_spam_checked", False):
