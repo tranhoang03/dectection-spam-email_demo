@@ -167,8 +167,6 @@ if option == "✏️ Write Email":
             st.session_state["is_spam_checked"] = False
 
 else:
-    st.session_state.email_subject=''
-    st.session_state.email_body=''
     email_account = st.text_input("Enter your Gmail account:")
     email_password = st.text_input("Enter your Gmail password:", type="password")
 
