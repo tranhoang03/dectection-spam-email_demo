@@ -9,7 +9,6 @@ import email
 from email.header import decode_header
 import standard_data
 
-
 # Đọc dữ liệu và tải mô hình
 @st.cache_resource
 def load_model_and_vectorizer():
@@ -23,9 +22,7 @@ def load_model_and_vectorizer():
 
     return model_en, vectorizer_en, model_vi, vectorizer_vi
 
-
 model_en, vectorizer_en, model_vi, vectorizer_vi = load_model_and_vectorizer()
-
 
 # Hàm xử lý văn bản
 def process_text(text, language):
@@ -45,7 +42,6 @@ def process_text(text, language):
     except Exception as e:
         return str(e)
 
-
 # Gửi email
 def send_email(sender_email, sender_password, recipient_email, email_content):
     try:
@@ -63,7 +59,6 @@ def send_email(sender_email, sender_password, recipient_email, email_content):
         return "Email sent successfully!"
     except Exception as e:
         return str(e)
-
 
 # Lấy email từ Gmail
 def fetch_email(email_account, email_password):
@@ -99,9 +94,38 @@ def fetch_email(email_account, email_password):
     except Exception as e:
         return None, str(e)
 
+# CSS để tùy chỉnh giao diện
+st.markdown("""
+    <style>
+        .main-title {
+            font-size: 30px;
+            color: #2c3e50;
+            text-align: center;
+        }
+        .description {
+            font-size: 16px;
+            color: #7f8c8d;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stButton>button {
+            background-color: #3498db;
+            color: white;
+            border-radius: 8px;
+        }
+        .stTextInput, .stTextArea {
+            border: 1px solid #bdc3c7;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # Xây dựng giao diện với Streamlit
-st.title("Email Spam Checker")
+st.markdown("""
+    <div class="main-title">📧 Email Spam Checker</div>
+    <div class="description">
+        Use this app to detect whether an email is spam or ham
+    </div>
+""", unsafe_allow_html=True)
 
 # Lưu trạng thái trong session_state
 if "email_body" not in st.session_state:
@@ -109,53 +133,64 @@ if "email_body" not in st.session_state:
 if "email_subject" not in st.session_state:
     st.session_state.email_subject = ""
 
-option = st.selectbox("Choose an option:", ["Write Email", "Get Email from My Gmail"])
+option = st.selectbox(
+    "What do you want to do?",
+    ["✏️ Write Email", "📥 Get Email from My Gmail"]
+)
 
-if option == "Write Email":
-    email_content = st.text_area("Enter email content:", "")
-    language = st.selectbox("Choose language:", ["en", "vi"])
+if option == "✏️ Write Email":
+    col1, col2 = st.columns(2)
+    with col1:
+        email_content = st.text_area("Enter email content:", "")
+    with col2:
+        language = st.selectbox("Choose language:", ["English", "Vietnamese"])
+
     if st.button("Check Spam"):
-        result = process_text(email_content, language)
+        result = process_text(email_content, "en" if language == "English" else "vi")
         if "Ham mail" in result:
-            st.success(result)
-            # Lưu trạng thái đã kiểm tra email vào session_state
+            st.success(f"✅ {result}")
             st.session_state["is_spam_checked"] = True
             st.session_state["email_content"] = email_content
         else:
-            st.error(result)
-            st.session_state["is_spam_checked"] = False 
+            st.error(f"🚫 {result}")
+            st.session_state["is_spam_checked"] = False
 
-    # Hiển thị các trường gửi email chỉ khi email được xác nhận là "Ham mail"
     if st.session_state.get("is_spam_checked", False):
         sender_email = st.text_input("Your email:")
         sender_password = st.text_input("Your password:", type="password")
         recipient_email = st.text_input("Recipient's email:")
 
-        # Nút gửi email
         if st.button("Send Email"):
             email_content = st.session_state.get("email_content", "")
             send_result = send_email(sender_email, sender_password, recipient_email, email_content)
             st.write(send_result)
             st.session_state["is_spam_checked"] = False
-            
 
 else:
+    st.session_state.email_subject=''
+    st.session_state.email_body=''
     email_account = st.text_input("Enter your Gmail account:")
     email_password = st.text_input("Enter your Gmail password:", type="password")
+
     if st.button("Fetch Latest Email"):
+  
         subject, body = fetch_email(email_account, email_password)
         if body:
             st.session_state.email_subject = subject
             st.session_state.email_body = body
-    # Hiển thị email sau khi tải
-    if st.session_state.email_body:
-        st.write("Email Subject:", st.session_state.email_subject)
-        st.text_area("Email Content:", st.session_state.email_body, key="email_display")
-        language = st.selectbox("Choose language for prediction:", ["en", "vi"])
-        if st.button("Check Spam Email"):
-            result = process_text(st.session_state.email_body, language)
-            if("Ham mail" in result ):
-                st.success(result)
-            else:
-                st.error(result)
 
+    if st.session_state.email_body:
+        st.markdown(f"""
+            <div style="border: 1px solid #bdc3c7; padding: 10px; border-radius: 5px;">
+                <strong>Email Subject:</strong> {st.session_state.email_subject} <br>
+                <strong>Email Body:</strong> {st.session_state.email_body}
+            </div>
+        """, unsafe_allow_html=True)
+
+        language = st.selectbox("Choose language for prediction:", ["English", "Vietnamese"])
+        if st.button("Check Spam Email"):
+            result = process_text(st.session_state.email_body, "en" if language == "English" else "vi")
+            if "Ham mail" in result:
+                st.success(f"✅ {result}")
+            else:
+                st.error(f"🚫 {result}")
