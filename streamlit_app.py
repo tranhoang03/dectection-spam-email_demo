@@ -4,17 +4,11 @@ import joblib
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import imaplib
-import email
-from email.header import decode_header
 import standard_data
 
 # Đọc dữ liệu và tải mô hình
 @st.cache_resource
 def load_model_and_vectorizer():
-    data_en = pd.read_csv('data_en.csv')
-    data_vi = pd.read_csv('data_vi.csv', encoding="utf-8")
-
     model_en = joblib.load('svm_model_en.joblib')
     vectorizer_en = joblib.load('vectorizer_en.joblib')
     model_vi = joblib.load('svm_model_vi.joblib')
@@ -60,135 +54,114 @@ def send_email(sender_email, sender_password, recipient_email, email_content):
     except Exception as e:
         return str(e)
 
-# Lấy email từ Gmail
-def fetch_email(email_account, email_password):
-    try:
-        mail = imaplib.IMAP4_SSL("imap.gmail.com")
-        mail.login(email_account, email_password)
-        mail.select("inbox")
-
-        status, messages = mail.search(None, "ALL")
-        email_ids = messages[0].split()
-        latest_email_id = email_ids[-1]
-
-        status, msg_data = mail.fetch(latest_email_id, "(RFC822)")
-        for response_part in msg_data:
-            if isinstance(response_part, tuple):
-                msg = email.message_from_bytes(response_part[1])
-                email_subject, encoding = decode_header(msg["Subject"])[0]
-                if isinstance(email_subject, bytes):
-                    email_subject = email_subject.decode(encoding or "utf-8")
-
-                if msg.is_multipart():
-                    for part in msg.walk():
-                        content_type = part.get_content_type()
-                        if content_type == "text/plain":
-                            email_body = part.get_payload(decode=True).decode()
-                            break
-                else:
-                    email_body = msg.get_payload(decode=True).decode()
-
-        mail.close()
-        mail.logout()
-        return email_subject, email_body
-    except Exception as e:
-        return None, str(e)
-
-# CSS để tùy chỉnh giao diện
+# CSS để tùy chỉnh giao diện và hiển thị tên tác giả
 st.markdown("""
     <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
         .main-title {
-            font-size: 30px;
+            font-size: 36px;
             color: #2c3e50;
             text-align: center;
+            font-weight: bold;
         }
         .description {
-            font-size: 16px;
+            font-size: 18px;
             color: #7f8c8d;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .stTextArea, .stTextInput {
+            border: 2px solid #bdc3c7;
+            border-radius: 10px;
+            margin-top: 10px;
         }
         .stButton>button {
             background-color: #3498db;
             color: white;
+            border: none;
             border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
         }
-        .stTextInput, .stTextArea {
-            border: 1px solid #bdc3c7;
+        .stButton>button:hover {
+            background-color: #2980b9;
+            cursor: pointer;
+        }
+        .result-box {
+            border: 1px solid #2ecc71;
+            border-radius: 10px;
+            padding: 15px;
+            background-color: #eafaf1;
+            color: #27ae60;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .error-box {
+            border: 1px solid #e74c3c;
+            border-radius: 10px;
+            padding: 15px;
+            background-color: #fdecea;
+            color: #c0392b;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .author-info {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 14px;
+            color: #95a5a6;
+            text-align: right;
         }
     </style>
 """, unsafe_allow_html=True)
 
-# Xây dựng giao diện với Streamlit
+# Giao diện chính
+st.markdown('<div class="main-title">📧 Email Spam Checker</div>', unsafe_allow_html=True)
+
+
+# Giao diện nhập liệu
+with st.form(key="email_form"):
+    email_content = st.text_area("✏️ Enter email content:", "", height=200)
+    language = st.selectbox("🌐 Choose language:", ["English", "Vietnamese"], index=0)
+    submit_button = st.form_submit_button("🚀 Check Spam")
+
+if submit_button:
+    result = process_text(email_content, "en" if language == "English" else "vi")
+    if "Ham mail" in result:
+        st.markdown(f'<div class="result-box">✅ {result}</div>', unsafe_allow_html=True)
+        st.session_state["is_spam_checked"] = True
+        st.session_state["email_content"] = email_content
+    else:
+        st.markdown(f'<div class="error-box">🚫 {result}</div>', unsafe_allow_html=True)
+        st.session_state["is_spam_checked"] = False
+
+# Gửi email sau khi kiểm tra spam thành công
+if st.session_state.get("is_spam_checked", False):
+    st.markdown("### ✉️ Send Your Email")
+    sender_email = st.text_input("📧 Your email:")
+    sender_password = st.text_input("🔑 Your password:", type="password")
+    recipient_email = st.text_input("📨 Recipient's email:")
+
+    if st.button("📤 Send Email"):
+        email_content = st.session_state.get("email_content", "")
+        send_result = send_email(sender_email, sender_password, recipient_email, email_content)
+        if "successfully" in send_result:
+            st.markdown('<div class="result-box">✅ Email sent successfully!</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="error-box">🚫 {send_result}</div>', unsafe_allow_html=True)
+
+# Hiển thị tên tác giả và mã sinh viên
 st.markdown("""
-    <div class="main-title">📧 Email Spam Checker</div>
-    <div class="description">
-        Use this app to detect whether an email is spam or ham
+    <div class="author-info">
+        Developed by: <strong>Trần Văn Hoàng</strong> <br>
+        Student ID: <strong>21T1020871</strong>
     </div>
 """, unsafe_allow_html=True)
-
-# Lưu trạng thái trong session_state
-if "email_body" not in st.session_state:
-    st.session_state.email_body = ""
-if "email_subject" not in st.session_state:
-    st.session_state.email_subject = ""
-
-option = st.selectbox(
-    "What do you want to do?",
-    ["✏️ Write Email", "📥 Get Email from My Gmail"]
-)
-
-if option == "✏️ Write Email":
-    col1, col2 = st.columns(2)
-    with col1:
-        email_content = st.text_area("Enter email content:", "")
-    with col2:
-        language = st.selectbox("Choose language:", ["English", "Vietnamese"])
-
-    if st.button("Check Spam"):
-        result = process_text(email_content, "en" if language == "English" else "vi")
-        if "Ham mail" in result:
-            st.success(f"✅ {result}")
-            st.session_state["is_spam_checked"] = True
-            st.session_state["email_content"] = email_content
-        else:
-            st.error(f"🚫 {result}")
-            st.session_state["is_spam_checked"] = False
-
-    if st.session_state.get("is_spam_checked", False):
-        sender_email = st.text_input("Your email:")
-        sender_password = st.text_input("Your password:", type="password")
-        recipient_email = st.text_input("Recipient's email:")
-
-        if st.button("Send Email"):
-            email_content = st.session_state.get("email_content", "")
-            send_result = send_email(sender_email, sender_password, recipient_email, email_content)
-            st.write(send_result)
-            st.session_state["is_spam_checked"] = False
-
-else:
-    email_account = st.text_input("Enter your Gmail account:")
-    email_password = st.text_input("Enter your Gmail password:", type="password")
-
-    if st.button("Fetch Latest Email"):
-  
-        subject, body = fetch_email(email_account, email_password)
-        if body:
-            st.session_state.email_subject = subject
-            st.session_state.email_body = body
-
-    if st.session_state.email_body:
-        st.markdown(f"""
-            <div style="border: 1px solid #bdc3c7; padding: 10px; border-radius: 5px;">
-                <strong>Email Subject:</strong> {st.session_state.email_subject} <br>
-                <strong>Email Body:</strong> {st.session_state.email_body}
-            </div>
-        """, unsafe_allow_html=True)
-
-        language = st.selectbox("Choose language for prediction:", ["English", "Vietnamese"])
-        if st.button("Check Spam Email"):
-            result = process_text(st.session_state.email_body, "en" if language == "English" else "vi")
-            if "Ham mail" in result:
-                st.success(f"✅ {result}")
-            else:
-                st.error(f"🚫 {result}")
