@@ -9,10 +9,10 @@ import standard_data
 # Đọc dữ liệu và tải mô hình
 @st.cache_resource
 def load_model_and_vectorizer():
-    model_en = joblib.load('svm_model_en.joblib')
-    vectorizer_en = joblib.load('vectorizer_en.joblib')
-    model_vi = joblib.load('svm_model_vi.joblib')
-    vectorizer_vi = joblib.load('vectorizer_vi.joblib')
+    model_en = joblib.load('https://raw.githubusercontent.com/tranhoang03/dectection-spam-email_demo/master/svm_model_en.joblib')
+    vectorizer_en = joblib.load('https://raw.githubusercontent.com/tranhoang03/dectection-spam-email_demo/master/vectorizer_en.joblib')
+    model_vi = joblib.load('https://raw.githubusercontent.com/tranhoang03/dectection-spam-email_demo/master/svm_model_vi.joblib')
+    vectorizer_vi = joblib.load('https://raw.githubusercontent.com/tranhoang03/dectection-spam-email_demo/master/vectorizer_vi.joblib')
 
     return model_en, vectorizer_en, model_vi, vectorizer_vi
 
